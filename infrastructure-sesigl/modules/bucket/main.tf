@@ -12,7 +12,7 @@ resource "aws_s3_bucket_cors_configuration" "example" {
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["GET"]
-    allowed_origins = ["https://www.selysium.com"]
+    allowed_origins = ["https://www.selysia.com"]
     expose_headers  = ["ETag"]
     max_age_seconds = 3000
   }
