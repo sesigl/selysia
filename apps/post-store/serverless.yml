@@ -1,0 +1,116 @@
+---
+app: post-store
+service: post-store
+
+frameworkVersion: ">=2.24.0"
+
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: go1.x
+  region: eu-central-1
+  environment:
+    COCKROACHDB_URL: ${env:COCKROACHDB_URL}
+    POST_STORE_REDIS_URL: ${env:POST_STORE_REDIS_URL}
+
+plugins:
+  - serverless-offline
+  - serverless-domain-manager
+  - serverless-dotenv-plugin
+
+functions:
+  aiGenerateContentPost:
+    handler: bin/ai_generateContent_post
+    memorySize: 128
+    package:
+      include:
+        - ./bin/ai_generateContent_post
+    events:
+      -   http:
+            path: ai/generate-content
+            method: post
+            cors:
+              origin: ${self:custom.cors.${sls:stage, self:provider.stage}}
+              headers:
+                - next-auth.session-token
+                - content-type
+
+  postGet:
+    handler: bin/post_get
+    memorySize: 128
+    package:
+      include:
+        - ./bin/get
+    events:
+      - http:
+          path: posts
+          method: get
+          cors:
+            origin: ${self:custom.cors.${sls:stage, self:provider.stage}}
+            headers:
+              - next-auth.session-token
+              - content-type
+
+  postPut:
+    handler: bin/post_put
+    memorySize: 128
+    package:
+      include:
+        - ./bin/put
+    events:
+      - http:
+          path: posts/{postId}
+          method: put
+          cors:
+            origin: ${self:custom.cors.${sls:stage, self:provider.stage}}
+            headers:
+              - next-auth.session-token
+              - content-type
+
+  postPost:
+    handler: bin/post_post
+    memorySize: 128
+    package:
+      include:
+        - ./bin/post
+    events:
+      - http:
+          path: posts
+          method: post
+          cors:
+            origin: ${self:custom.cors.${sls:stage, self:provider.stage}}
+            headers:
+              - next-auth.session-token
+              - content-type
+
+  postDelete:
+    handler: bin/post_delete
+    memorySize: 128
+    package:
+      include:
+        - ./bin/delete
+    events:
+      - http:
+          path: posts/{postId}
+          method: delete
+          cors:
+            origin: ${self:custom.cors.${sls:stage, self:provider.stage}}
+            headers:
+              - next-auth.session-token
+              - content-type
+
+custom:
+  cors:
+    dev: "*"
+    production: ${env:API_ALLOW_ORIGIN}
+  enabled:
+    dev: false
+    production: true
+  customDomain:
+    domainName: "posts.selysia.com"
+    stage: production
+    basePath: ''
+    createRoute53Record: true
+    endpointType: 'regional'
+    enabled: ${self:custom.enabled.${sls:stage, self:provider.stage}}

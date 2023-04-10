@@ -1,0 +1,88 @@
+# This is a basic workflow to help you get started with Actions
+
+name: post-store-deployment
+
+on:
+    push:
+        branches:
+            - 'main'
+        paths:
+          - 'apps/post-store/**'
+          - '.github/**'
+    pull_request:
+        paths:
+          - 'apps/post-store/**'
+          - '.github/**'
+
+defaults:
+  run:
+    working-directory: ./apps/post-store
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+    # The "build" workflow
+    build-and-deploy:
+        # The type of runner that the job will run on
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions/setup-node@v3
+              with:
+                node-version: 18
+            - name: Setup Go
+              uses: actions/setup-go@v3
+              with:
+                go-version-file: 'apps/post-store/go.mod'
+
+            - name: golangci-lint setup
+              run: |
+                    curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.50.1
+
+            - name: Install dependencies
+              run: |
+                    go version
+                    make install-deps
+
+            - name: Run build
+              run: make build
+
+            - name: Install serverless framework
+              if: github.ref == 'refs/heads/main'
+              run: |
+                npm install -g serverless
+                npm ci
+
+            - name: Configure AWS Credentials
+              if: github.ref == 'refs/heads/main'
+              uses: aws-actions/configure-aws-credentials@v1
+              with:
+                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                aws-region: ${{ secrets.AWS_REGION }}
+                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+            - name: Install golang-migrate
+              if: github.ref == 'refs/heads/main'
+              run: |
+                curl -L https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-amd64.tar.gz | tar xvz
+                sudo mv migrate /usr/bin/migrate
+                which migrate
+
+            - name: Run migrations
+              if: github.ref == 'refs/heads/main'
+              run: migrate -database ${{ secrets.COCKROACHDB_URL_PROD_POST_STORE_MIGRATE }} -path db/migrations up 
+
+            - name: Make envfile
+              if: github.ref == 'refs/heads/main'
+              uses: SpicyPizza/create-envfile@v1.3
+              with:
+                envkey_COCKROACHDB_URL: ${{ secrets.COCKROACHDB_URL_PROD_POST_STORE }}
+                envkey_REDIS_URL: ${{ secrets.POST_STORE_REDIS_URL }}
+                envkey_API_ALLOW_ORIGIN: "https://www.selysia.com"
+                envkey_NEXTAUTH_SECRET: "17948b102ae2aa5c90270f10d14be6dd"
+                file_name: .env
+                directory: ./apps/post-store
+
+            - name: Deploy production
+              if: github.ref == 'refs/heads/main'
+              run: make deploy-prod

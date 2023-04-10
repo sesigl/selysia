@@ -1,0 +1,252 @@
+openapi: 3.0.0
+info:
+  description: ""
+  title: Post Store API
+  version: "1"
+servers:
+- url: /
+paths:
+  /ai/generate-content:
+    post:
+      operationId: ai_generate_content
+      parameters:
+      - explode: false
+        in: header
+        name: next-auth.session-token
+        required: true
+        schema:
+          format: jwt
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiContentPostRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiContentResponse'
+          description: Ai Content Response
+        "500":
+          description: An error message
+      summary: Generate content
+  /posts:
+    get:
+      description: "Gets posts for a user, the filter userId is required"
+      operationId: get
+      parameters:
+      - description: The number of items to skip before starting to collect the result
+          set
+        explode: true
+        in: query
+        name: userId
+        required: true
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: header
+        name: next-auth.session-token
+        required: true
+        schema:
+          format: jwt
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponses'
+          description: Post objects
+        "500":
+          description: An error message
+      summary: Get posts
+    post:
+      operationId: post
+      parameters:
+      - explode: false
+        in: header
+        name: next-auth.session-token
+        required: true
+        schema:
+          format: jwt
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrUpdatePostRequest'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+          description: Created post
+        "500":
+          description: An error message
+      summary: Create post
+  /posts/{postId}:
+    delete:
+      operationId: delete
+      parameters:
+      - description: Post ID
+        explode: false
+        in: path
+        name: postId
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: next-auth.session-token
+        required: true
+        schema:
+          format: jwt
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponses'
+          description: Post objects
+        "500":
+          description: An error message
+      summary: Delete post
+    put:
+      operationId: put
+      parameters:
+      - description: Post ID
+        explode: false
+        in: path
+        name: postId
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: false
+        in: header
+        name: next-auth.session-token
+        required: true
+        schema:
+          format: jwt
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrUpdatePostRequest'
+        required: true
+      responses:
+        "204":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+          description: Created post
+        "500":
+          description: An error message
+      summary: Update post
+components:
+  schemas:
+    AiContentResponse:
+      example:
+        rateLimit:
+          usage: 6
+          limit: 1
+          timeUntilRefreshSeconds: 0
+        text: text
+      properties:
+        text:
+          type: string
+        rateLimit:
+          $ref: '#/components/schemas/AiContentResponse_rateLimit'
+      required:
+      - rateLimit
+      - text
+      type: object
+    PostResponse:
+      example:
+        createdAt: 2000-01-23T04:56:07.000+00:00
+        publishAt: 2000-01-23T04:56:07.000+00:00
+        id: id
+        message: message
+        userId: userId
+      properties:
+        id:
+          type: string
+        message:
+          type: string
+        userId:
+          type: string
+        publishAt:
+          format: date-time
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+      required:
+      - createdAt
+      - id
+      - message
+      - publishAt
+      - userId
+      type: object
+    PostResponses:
+      items:
+        $ref: '#/components/schemas/PostResponse'
+      type: array
+    CreateOrUpdatePostRequest:
+      example:
+        publishAt: 2000-01-23T04:56:07.000+00:00
+        message: message
+      properties:
+        message:
+          type: string
+        publishAt:
+          format: date-time
+          type: string
+      required:
+      - message
+      - publishAt
+      type: object
+    AiContentPostRequest:
+      example:
+        actor: actor
+        text: text
+      properties:
+        text:
+          type: string
+        actor:
+          type: string
+      required:
+      - actor
+      - text
+      type: object
+    AiContentResponse_rateLimit:
+      example:
+        usage: 6
+        limit: 1
+        timeUntilRefreshSeconds: 0
+      properties:
+        timeUntilRefreshSeconds:
+          type: integer
+        usage:
+          type: integer
+        limit:
+          type: integer
+      type: object
+  securitySchemes: {}

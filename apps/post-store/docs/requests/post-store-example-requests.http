@@ -1,0 +1,96 @@
+POST {{baseUrl}}/posts
+Content-Type: application/json
+next-auth.session-token: {{authToken}}
+
+{
+  "message": "example message",
+  "publishAt": "{{publishAtTime}}"
+}
+
+> {%
+  client.global.set("createdPostId", response.body.id);
+  client.test("Request executed successfully", function() {
+    client.assert(response.status === 201, "Response status is not 201");
+  });
+%}
+
+### Get created post
+GET {{baseUrl}}/posts?userId={{userId}}
+Content-Type: application/json
+next-auth.session-token: {{authToken}}
+
+> {%
+  client.test("Request executed successfully", function() {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(JSON.stringify(response.body).indexOf(client.global.get("createdPostId")) !== -1, "Response does not contain created post with id " + client.global.get("createdPostId"));
+  });
+%}
+
+### update created post
+PUT {{baseUrl}}/posts/{{createdPostId}}
+Content-Type: application/json
+next-auth.session-token: {{authToken}}
+
+{
+  "message": "example message updated",
+  "publishAt": "{{publishAtTime}}"
+}
+
+> {%
+  client.test("Request executed successfully", function() {
+    client.assert(response.status === 200, "Response status is not 200, it is " + response.status);
+    client.assert(JSON.stringify(response.body).indexOf(client.global.get("createdPostId")) !== -1, "Response does not contain created post with id " + client.global.get("createdPostId"));
+  });
+%}
+
+### Get updated post
+GET {{baseUrl}}/posts?userId={{userId}}
+Content-Type: application/json
+next-auth.session-token: {{authToken}}
+
+> {%
+  client.test("Request executed successfully", function() {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(JSON.stringify(response.body).indexOf("example message updated") !== -1, "Response does not contain updated post with new message");
+  });
+%}
+
+### delete created post
+DELETE {{baseUrl}}/posts/{{createdPostId}}
+Content-Type: application/json
+next-auth.session-token: {{authToken}}
+
+> {%
+  client.test("Request executed successfully", function() {
+    client.assert(response.status === 200, "Response status is not 200");
+  });
+%}
+
+### Get post to ensure deleted post does not exist
+GET {{baseUrl}}/posts?userId={{userId}}
+Content-Type: application/json
+next-auth.session-token: {{authToken}}
+
+> {%
+  client.test("Request executed successfully", function() {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(JSON.stringify(response.body).indexOf(client.global.get("createdPostId")) === -1, "Response does contain created post with id " + client.global.get("createdPostId") + " but should be deleted");
+  });
+%}
+
+### AI generate content
+POST {{baseUrl}}/ai/generate-content
+Content-Type: application/json
+next-auth.session-token: {{authToken}}
+
+{
+  "text": "SOLID principles are important",
+  "actor": "tech social media influencer"
+}
+
+> {%
+  client.test("Returns text", function() {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(JSON.stringify(response.body).length > 50, "Generated content is too short");
+  });
+%}
