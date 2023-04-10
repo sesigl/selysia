@@ -42,8 +42,7 @@ becomes like a compile-time safe contract.
 <h2>Deployment</h2>
 The frontend is deployed via Vercel, while the backend is deployed to AWS Lambda via the Serverless Framework.
 <h2>Contributing</h2>
-We welcome contributions to Selysia! Please read our <a href="CONTRIBUTING.md" target="_new">contributing guide</a> to
-get started.
+This project is on hold.
 <h2>License</h2>
 All project-specific (not design template) code is MIT license, but the
 template you need to buy if you want to use it via <a href="https://cruip.com/" target="_new">https://cruip.com/</a>.
